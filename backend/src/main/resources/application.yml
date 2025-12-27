@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: asset-tracker
+  profiles:
+    active: dev 
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  version: 1.0.0
+  name: Tracker Application
+
+jwt:
+  secret: your-super-secret-jwt-key-here-make-it-very-long-and-secure
+  expiration: 86400000  # 24 hours in milliseconds
+  refresh:
+    expiration: 604800000  # 7 days in milliseconds
+
+logging:
+  level:
+    org.springframework.boot.autoconfigure: WARN
+    org.springframework.boot.context.config: WARN
+    org.springframework.boot.devtools: WARN
+    org.flywaydb: INFO
+
+
