@@ -45,6 +45,20 @@ pnpm-lock.yaml
 # Build outputs
 dist/
 build/
-target/
 out/
+# Note: *.jar and *.war are commented to allow maven wrapper jars
+# backend/.mvn/wrapper/*.jar is specifically ignored below
 
+# Backend specific - only ignore target folder, not the entire backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.mvn/wrapper/maven-wrapper.properties
+backend/logs/
+
+# Frontend specific
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local

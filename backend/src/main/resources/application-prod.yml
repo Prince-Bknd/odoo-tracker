@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: asset-tracker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/tracker_prod}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # Enable Flyway for database migrations
+  flyway:
+    enabled: true
+    locations: classpath:migration/versions
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    out-of-order: false
+
+logging:
+  level:
+    com.project.tracker: INFO
+    org.springframework: WARN
+    org.hibernate.SQL: WARN
+    # Disable verbose Spring Boot auto-configuration logs
+    org.springframework.boot.autoconfigure: WARN
+    org.springframework.boot.context.config: WARN
+    org.springframework.boot.devtools: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/tracker.log
+    max-size: 100MB
+    max-history: 30
+
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+prod:
+  feature:
+    debug-mode: false
+    cache-enabled: true
+  security:
+    cors:
+      allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
+      allowed-methods: GET,POST,PUT,DELETE
+      allowed-headers: "*"

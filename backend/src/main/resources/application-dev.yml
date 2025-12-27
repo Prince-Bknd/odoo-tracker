@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: tracker
+  datasource:
+    url: jdbc:mysql://localhost:3306/trackerdb?createDatabaseIfNotExist=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 4321
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:migration/versions
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+logging:
+  level:
+    com.project.tracker: DEBUG
+    org.springframework: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.flywaydb: INFO
+    org.springframework.boot.autoconfigure: WARN
+    org.springframework.boot.context.config: WARN
+    org.springframework.boot.devtools: WARN
+
+server:
+  port: 8000
+
+dev:
+  feature:
+    debug-mode: true
+    cache-enabled: false
