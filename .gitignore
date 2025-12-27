@@ -45,12 +45,11 @@ pnpm-lock.yaml
 # Build outputs
 dist/
 build/
-target/
 out/
 *.jar
 *.war
 
-# Backend specific
+# Backend specific - only ignore target folder, not the entire backend
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/.mvn/wrapper/maven-wrapper.properties
