@@ -1,0 +1,12 @@
+import api from "./api";
+export const getAllEquipment = () => api.get("/equipment").then(r => r.data.data);
+export const getActiveEquipment = () => api.get("/equipment/active").then(r => r.data.data);
+export const getEquipmentById = (id) => api.get(`/equipment/${id}`).then(r => r.data.data);
+export const searchEquipment = (q) => api.get("/equipment/search", { params: { q } }).then(r => r.data.data);
+export const getEquipmentByDepartment = (dept) => api.get("/equipment/by-department", { params: { dept } }).then(r => r.data.data);
+export const getEquipmentByEmployee = (name) => api.get("/equipment/by-employee", { params: { name } }).then(r => r.data.data);
+export const getOpenRequestCount = (id) => api.get(`/equipment/${id}/request-count`).then(r => r.data.data.openCount);
+export const createEquipment = (payload) => api.post("/equipment", payload).then(r => r.data.data);
+export const updateEquipment = (id, payload) => api.put(`/equipment/${id}`, payload).then(r => r.data.data);
+export const scrapEquipment = (id, note = "") => api.patch(`/equipment/${id}/scrap`, { note }).then(r => r.data.data);
+export const deleteEquipment = (id) => api.delete(`/equipment/${id}`).then(r => r.data);
