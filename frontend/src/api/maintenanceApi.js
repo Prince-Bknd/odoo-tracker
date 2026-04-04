@@ -1,0 +1,12 @@
+import api from "./api";
+export const getAllRequests = (params = {}) => api.get("/maintenance", { params }).then(r => r.data.data);
+export const getRequestById = (id) => api.get(`/maintenance/${id}`).then(r => r.data.data);
+export const getCalendarEvents = (start, end) => api.get("/maintenance/calendar", { params: { start, end } }).then(r => r.data.data);
+export const getOverdueRequests = () => api.get("/maintenance/overdue").then(r => r.data.data);
+export const getRequestsByEquipment = (equipmentId) => api.get(`/maintenance/by-equipment/${equipmentId}`).then(r => r.data.data);
+export const reportByTeam = () => api.get("/maintenance/reports/by-team").then(r => r.data.data);
+export const reportByCategory = () => api.get("/maintenance/reports/by-category").then(r => r.data.data);
+export const createRequest = (payload) => api.post("/maintenance", payload).then(r => r.data.data);
+export const updateRequest = (id, payload) => api.put(`/maintenance/${id}`, payload).then(r => r.data.data);
+export const updateRequestStatus = (id, status, notes = "") => api.patch(`/maintenance/${id}/status`, { status, notes }).then(r => r.data.data);
+export const deleteRequest = (id) => api.delete(`/maintenance/${id}`).then(r => r.data);

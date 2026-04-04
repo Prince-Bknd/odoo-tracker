@@ -1,5 +1,113 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, #root {
-  height: 100%;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  background: #030712;
+  color: #f9fafb;
+  -webkit-font-smoothing: antialiased;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  color: #f9fafb;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: #3b82f6;
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.4);
+}
+
+/* FullCalendar dark theme */
+.calendar-wrapper .fc {
+  --fc-border-color: #1f2937;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: #1f2937;
+  --fc-today-bg-color: rgba(59, 130, 246, 0.08);
+  --fc-event-border-color: transparent;
+}
+
+.calendar-wrapper .fc-toolbar-title {
+  color: #f9fafb;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.calendar-wrapper .fc-button {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #d1d5db !important;
+  border-radius: 0.5rem !important;
+}
+
+.calendar-wrapper .fc-button:hover {
+  background: #374151 !important;
+}
+
+.calendar-wrapper .fc-button-active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+.calendar-wrapper .fc-col-header-cell {
+  background: #111827;
+}
+
+.calendar-wrapper .fc-col-header-cell-cushion {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px;
+  text-decoration: none;
+}
+
+.calendar-wrapper .fc-daygrid-day-number {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.calendar-wrapper .fc-day-today .fc-daygrid-day-number {
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
 }

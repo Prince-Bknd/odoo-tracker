@@ -1,239 +1,154 @@
 import { useEffect, useState } from "react";
-import api from "../api/api";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
+import { createRequest, getRequestById, updateRequest } from "../api/maintenanceApi";
+import { getActiveEquipment, getEquipmentById } from "../api/equipmentApi";
+import { getAllTeams } from "../api/teamsApi";
 
 export default function MaintenanceForm() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id: urlId } = useParams();                    // from /maintenance/:id
+  const searchParams = new URLSearchParams(location.search);
+  const preselectedEquipmentId = searchParams.get("equipmentId");
+  const preselectedDate = searchParams.get("scheduledDate");
+  const preselectedType = searchParams.get("type");
+  // Support both /maintenance/:id URL and ?editId= query param
+  const editId = urlId || searchParams.get("editId");
+
   const [equipments, setEquipments] = useState([]);
-  const [selectedEquipment, setSelectedEquipment] = useState(null); // 🟢 NEW
+  const [teams, setTeams] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [autoFilling, setAuto] = useState(false);
+  const [scrappedWarning, setSW] = useState(false);
+
   const [form, setForm] = useState({
-    subject: "",
-    type: "Corrective",
-    equipmentId: "",
-    team: "",
-    technician: "",
-    scheduledDate: "",
-    duration: "",
+    subject: "", type: preselectedType || "CORRECTIVE", equipmentId: preselectedEquipmentId || "",
+    teamId: "", technician: "", scheduledDate: preselectedDate || "", durationHours: "", notes: "",
   });
 
-  // Load equipment list
   useEffect(() => {
-    fetchEquipments();
+    Promise.all([getActiveEquipment(), getAllTeams()])
+      .then(([eqs, tms]) => { setEquipments(eqs); setTeams(tms); });
+
+    if (editId) {
+      getRequestById(editId).then(r => setForm({
+        subject: r.subject || "", type: r.type || "CORRECTIVE", equipmentId: r.equipmentId || "",
+        teamId: r.teamId || "", technician: r.technician || "", scheduledDate: r.scheduledDate || "",
+        durationHours: r.durationHours || "", notes: r.notes || "",
+      }));
+    } else if (preselectedEquipmentId) {
+      autoFillFromEquipment(preselectedEquipmentId);
+    }
   }, []);
 
-  const fetchEquipments = async () => {
+  const autoFillFromEquipment = async (eqId) => {
+    if (!eqId) { setSW(false); return; }
+    setAuto(true);
     try {
-      // const res = await api.get("/equipments");
-      // setEquipments(res.data);
-
-      // 🔧 Dummy data WITH scrap flag
-      setEquipments([
-        { id: 1, name: "Hydraulic Press", scrapped: false },
-        { id: 2, name: "CNC Machine", scrapped: true }, // 🔴 SCRAPPED
-        { id: 3, name: "Air Compressor", scrapped: false },
-      ]);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Auto-fill team & technician
-  const handleEquipmentChange = async (e) => {
-    const equipmentId = e.target.value;
-
-    const eq = equipments.find((e) => e.id == equipmentId);
-    setSelectedEquipment(eq); // 🟢 STORE SELECTED EQUIPMENT
-
-    setForm((prev) => ({
-      ...prev,
-      equipmentId,
-      team: "",
-      technician: "",
-    }));
-
-    if (!equipmentId || eq?.scrapped) return;
-
-    try {
-      // const res = await api.get(`/equipments/${equipmentId}`);
-
-      // Dummy response
-      const res = {
-        team: "Mechanical",
-        technician: "Rahul",
-      };
-
-      setForm((prev) => ({
-        ...prev,
-        team: res.team,
-        technician: res.technician,
+      const eq = await getEquipmentById(eqId);
+      setSW(Boolean(eq.isScrapped));
+      setForm(p => ({
+        ...p,
+        teamId: (!p.teamId && eq.teamId) ? String(eq.teamId) : p.teamId,
+        technician: (!p.technician && eq.technicianDefault) ? eq.technicianDefault : p.technician,
       }));
-    } catch (err) {
-      console.error(err);
-    }
+    } catch { } finally { setAuto(false); }
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const set = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
+
+  const handleEquipmentChange = (e) => {
+    const val = e.target.value;
+    setForm(p => ({ ...p, equipmentId: val, teamId: "", technician: "" }));
+    if (val) autoFillFromEquipment(val);
+    else setSW(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (selectedEquipment?.scrapped) return; // 🛑 FINAL BLOCK
-
-    const payload = {
-      subject: form.subject,
-      type: form.type,
-      equipmentId: form.equipmentId,
-      team: form.team,
-      technician: form.technician,
-      scheduledDate: form.scheduledDate,
-      duration: form.duration,
-    };
-
+    if (scrappedWarning) return;
+    setSaving(true);
     try {
-      // await api.post("/maintenance", payload);
-      console.log("Submitting maintenance request:", payload);
-      alert("Maintenance request created!");
-    } catch (err) {
-      console.error(err);
-      alert("Error creating request");
-    }
+      const payload = {
+        ...form,
+        equipmentId: form.equipmentId ? Number(form.equipmentId) : null,
+        teamId: form.teamId ? Number(form.teamId) : null,
+        durationHours: form.durationHours ? Number(form.durationHours) : null,
+      };
+      if (editId) await updateRequest(editId, payload);
+      else await createRequest(payload);
+      navigate("/maintenance");
+    } catch (err) { alert(err.response?.data?.message || "Save failed."); }
+    finally { setSaving(false); }
   };
 
-  // 🔴 IF SCRAPPED → BLOCK UI COMPLETELY
-  if (selectedEquipment?.scrapped) {
-    return (
-      <div className="p-6 max-w-3xl bg-red-900/30 border border-red-700 rounded">
-        <h2 className="text-red-400 text-xl font-semibold mb-2">
-          ⚠ Equipment Scrapped
-        </h2>
-        <p className="text-red-300">
-          Maintenance requests cannot be created for scrapped equipment.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 max-w-3xl">
-      <h1 className="text-2xl font-semibold text-white mb-6">
-        Create Maintenance Request
-      </h1>
+    <div className="p-6 max-w-2xl space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white"><ArrowLeft size={18} /></button>
+        <h1 className="text-2xl font-bold text-white">{editId ? "Edit Request" : "New Maintenance Request"}</h1>
+      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-[#1f1f1f] border border-gray-700 rounded-lg p-6 space-y-4"
-      >
-        {/* Subject */}
-        <Field label="Subject">
-          <input
-            type="text"
-            name="subject"
-            value={form.subject}
-            onChange={handleChange}
-            required
-            className="input"
-          />
-        </Field>
-
-        {/* Request Type */}
-        <Field label="Request Type">
-          <select
-            name="type"
-            value={form.type}
-            onChange={handleChange}
-            className="input"
-          >
-            <option value="Corrective">Corrective</option>
-            <option value="Preventive">Preventive</option>
-          </select>
-        </Field>
-
-        {/* Equipment */}
-        <Field label="Equipment">
-          <select
-            value={form.equipmentId}
-            onChange={handleEquipmentChange}
-            required
-            className="input"
-          >
-            <option value="">Select Equipment</option>
-            {equipments.map((eq) => (
-              <option key={eq.id} value={eq.id}>
-                {eq.name} {eq.scrapped ? "(Scrapped)" : ""}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        {/* Auto-filled fields */}
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Maintenance Team">
-            <input
-              type="text"
-              value={form.team}
-              disabled
-              className="input bg-gray-800"
-            />
-          </Field>
-
-          <Field label="Technician">
-            <input
-              type="text"
-              value={form.technician}
-              disabled
-              className="input bg-gray-800"
-            />
-          </Field>
+      {scrappedWarning && (
+        <div className="flex items-center gap-3 p-4 bg-red-900/20 border border-red-800 rounded-xl text-red-300">
+          <AlertTriangle size={16} /> <p className="text-sm">Selected equipment is <strong>scrapped</strong> — you cannot create a request for it.</p>
         </div>
+      )}
 
-        {/* Scheduled Date */}
-        <Field label="Scheduled Date">
-          <input
-            type="date"
-            name="scheduledDate"
-            value={form.scheduledDate}
-            onChange={handleChange}
-            className="input"
-          />
-        </Field>
-
-        {/* Duration */}
-        <Field label="Duration (hours)">
-          <input
-            type="number"
-            name="duration"
-            value={form.duration}
-            onChange={handleChange}
-            className="input"
-          />
-        </Field>
-
-        {/* Submit */}
-        <div className="flex justify-end">
-          <button
-            disabled={selectedEquipment?.scrapped}
-            className={`px-6 py-2 rounded-md text-white
-              ${
-                selectedEquipment?.scrapped
-                  ? "bg-gray-700 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
-          >
-            Create Request
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subject *</label>
+            <input className="input" value={form.subject} onChange={set("subject")} required placeholder="e.g. Oil leak, Bearing noise…" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Type</label>
+            <select className="input" value={form.type} onChange={set("type")}>
+              <option value="CORRECTIVE">Corrective</option>
+              <option value="PREVENTIVE">Preventive</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Equipment</label>
+            <select className="input" value={form.equipmentId} onChange={handleEquipmentChange}>
+              <option value="">None</option>
+              {equipments.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </select>
+            {autoFilling && <p className="text-xs text-blue-400">Auto-filling…</p>}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Team</label>
+            <select className="input" value={form.teamId} onChange={set("teamId")}>
+              <option value="">No team</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Technician</label>
+            <input className="input" value={form.technician} onChange={set("technician")} placeholder="username" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Scheduled Date</label>
+            <input type="date" className="input" value={form.scheduledDate} onChange={set("scheduledDate")} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Duration (hours)</label>
+            <input type="number" step="0.5" min="0" className="input" value={form.durationHours} onChange={set("durationHours")} />
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Notes</label>
+            <textarea rows={3} className="input" value={form.notes} onChange={set("notes")} placeholder="Additional details…" />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={saving || scrappedWarning}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-sm disabled:opacity-50 transition-colors">
+            <Save size={14} /> {saving ? "Saving…" : editId ? "Save Changes" : "Create Request"}
           </button>
+          <button type="button" onClick={() => navigate(-1)} className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium text-sm">Cancel</button>
         </div>
       </form>
-    </div>
-  );
-}
-
-/* 🔹 Small reusable components */
-
-function Field({ label, children }) {
-  return (
-    <div>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
-      {children}
     </div>
   );
 }
